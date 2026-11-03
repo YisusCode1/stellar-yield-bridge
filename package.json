@@ -1,0 +1,25 @@
+{
+  "name": "stellar-yield-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "StellarYield Bridge: transferencia manual CCTP Stellar testnet -> Arbitrum Sepolia (paso 0)",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "burn": "node --env-file=.env scripts/cctp.ts burn",
+    "attest": "node --env-file=.env scripts/cctp.ts attest",
+    "mint": "node --env-file=.env scripts/cctp.ts mint",
+    "all": "node --env-file=.env scripts/cctp.ts all",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^17.4.0",
+    "viem": "^2.57.15"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}
