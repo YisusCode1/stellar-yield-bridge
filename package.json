@@ -12,6 +12,7 @@
     "attest": "node --env-file=.env scripts/cctp.ts attest",
     "mint": "node --env-file=.env scripts/cctp.ts mint",
     "all": "node --env-file=.env scripts/cctp.ts all",
+    "bridge:run": "ts-node scripts/runBridge.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
