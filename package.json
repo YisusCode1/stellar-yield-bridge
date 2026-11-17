@@ -17,10 +17,24 @@
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^17.4.0",
+    "dotenv": "^18.0.10",
     "viem": "^2.57.15"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YisusCode1/stellar-yield-bridge.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YisusCode1/stellar-yield-bridge/issues"
+  },
+  "homepage": "https://github.com/YisusCode1/stellar-yield-bridge#readme"
 }

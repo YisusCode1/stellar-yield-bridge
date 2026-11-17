@@ -1,4 +1,15 @@
+# Dependencias Node.js
 node_modules/
-.env
 dist/
 *.log
+
+# Variables de entorno y secretos (NUNCA subir a GitHub)
+.env
+.env.*
+!.env.example
+
+# Compilación de Rust / Soroban
+target/
+contracts/target/
+.stellar/
+contracts/.stellar/

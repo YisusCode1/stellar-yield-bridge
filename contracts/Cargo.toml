@@ -1,0 +1,24 @@
+[package]
+name = "stellar_yield_bridge"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "29.0.1"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+lto = true
+
+[profile.release-with-assertions]
+inherits = "release"
+debug-assertions = true
+overflow-checks = true
