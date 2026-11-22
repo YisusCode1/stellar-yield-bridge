@@ -29,14 +29,14 @@ const VAULT_ABI = [
 ];
 
 function loadEnvKey(): string | undefined {
-  if (process.env.PRIVATE_KEY || process.env.ARBITRUM_PRIVATE_KEY) {
-    return process.env.PRIVATE_KEY || process.env.ARBITRUM_PRIVATE_KEY;
+  if (process.env.EVM_PRIVATE_KEY || process.env.PRIVATE_KEY || process.env.ARBITRUM_PRIVATE_KEY) {
+    return process.env.EVM_PRIVATE_KEY || process.env.PRIVATE_KEY || process.env.ARBITRUM_PRIVATE_KEY;
   }
   const envPath = path.resolve(process.cwd(), '.env');
   if (!fs.existsSync(envPath)) return undefined;
   const lines = fs.readFileSync(envPath, 'utf8').split('\n');
   for (const line of lines) {
-    const m = line.match(/^(?:PRIVATE_KEY|ARBITRUM_PRIVATE_KEY)\s*=\s*(.+)$/);
+    const m = line.match(/^(?:EVM_PRIVATE_KEY|PRIVATE_KEY|ARBITRUM_PRIVATE_KEY)\s*=\s*(.+)$/);
     if (m) return m[1].trim().replace(/^["']|["']$/g, '');
   }
   return undefined;
@@ -86,12 +86,13 @@ async function main() {
   const wallet = new ethers.Wallet(rawKey.startsWith('0x') ? rawKey : `0x${rawKey}`, provider);
   const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, wallet);
   const targetVault = new ethers.Contract(VAULTS[mode], VAULT_ABI, wallet);
+  const receiver = getArg('--receiver', wallet.address);
 
   const [ethBal, usdcBal, allowance, sharesBefore] = await Promise.all([
     provider.getBalance(wallet.address),
     usdc.balanceOf(wallet.address),
     usdc.allowance(wallet.address, VAULTS[mode]),
-    targetVault.balanceOf(wallet.address),
+    targetVault.balanceOf(receiver),
   ]);
 
   console.log(`\n2. Estado de wallet (${wallet.address}):`);
@@ -118,11 +119,11 @@ async function main() {
     console.log('   - Allowance suficiente, omitiendo approve().');
   }
 
-  const depositTx = await targetVault.deposit(parsedAmount, wallet.address);
+  const depositTx = await targetVault.deposit(parsedAmount, receiver);
   console.log(`   - deposit() tx : ${EXPLORER}/${depositTx.hash}`);
   const receipt = await depositTx.wait();
 
-  const sharesAfter = await targetVault.balanceOf(wallet.address);
+  const sharesAfter = await targetVault.balanceOf(receiver);
   console.log(`   - Confirmado en bloque #${receipt.blockNumber}`);
   console.log(`   - Shares después : ${ethers.formatUnits(sharesAfter, 6)} (+${ethers.formatUnits(sharesAfter - sharesBefore, 6)})`);
   console.log('\n✅ Auto-Deposit end-to-end verificado on-chain.');
