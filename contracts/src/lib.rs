@@ -1,6 +1,6 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contractevent, contractimpl, vec, Address, BytesN, Env, IntoVal, Symbol, Val,
+    contract, contractevent, contractimpl, token, vec, Address, BytesN, Env, IntoVal, Symbol,
 };
 
 #[contractevent]
@@ -17,7 +17,7 @@ pub struct StellarYieldBridgeContract;
 
 #[contractimpl]
 impl StellarYieldBridgeContract {
-    /// Inicia el depósito de USDC en Stellar y ejecuta el burn vía CCTP
+    /// Inicia el depósito de USDC en Stellar y ejecuta el burn real vía Circle CCTP V2
     pub fn deposit_for_burn(
         env: Env,
         from: Address,
@@ -33,21 +33,38 @@ impl StellarYieldBridgeContract {
             panic!("El monto a depositar debe ser mayor a cero");
         }
 
+        // 1. Aprobar el monto exacto de USDC para que TokenMessengerMinter ejecute transfer_from y queme
+        let usdc_client = token::Client::new(&env, &usdc_contract);
+        let expiration_ledger = ((env.ledger().sequence() / 1000) + 2) * 1000;
+        usdc_client.approve(&from, &token_messenger, &amount, &expiration_ledger);
+
+        // 2. Preparar argumentos de Circle CCTP V2
+        let destination_caller = BytesN::from_array(&env, &[0u8; 32]);
+        let max_fee: i128 = 0;
+        let min_finality_threshold: u32 = 2000; // Standard Transfer
+
         let args = vec![
             &env,
+            from.clone().into_val(&env),
             amount.into_val(&env),
             destination_domain.into_val(&env),
             mint_recipient.into_val(&env),
             usdc_contract.into_val(&env),
-            from.clone().into_val(&env),
+            destination_caller.into_val(&env),
+            max_fee.into_val(&env),
+            min_finality_threshold.into_val(&env),
         ];
 
-        // Llamada por contrato cruzado (CPI) al TokenMessenger
-        let nonce: u64 = env.invoke_contract(
+        // 3. Llamada real (CPI) al TokenMessengerMinter oficial de Circle
+        env.invoke_contract::<()>(
             &token_messenger,
-            &Symbol::new(&env, "deposit_for_burn_cctp"),
+            &Symbol::new(&env, "deposit_for_burn"),
             args,
         );
+
+        let nonce_key = Symbol::new(&env, "nonce");
+        let nonce: u64 = env.storage().instance().get(&nonce_key).unwrap_or(0) + 1;
+        env.storage().instance().set(&nonce_key, &nonce);
 
         BridgeDepositEvent {
             from,
@@ -57,18 +74,5 @@ impl StellarYieldBridgeContract {
         .publish(&env);
 
         nonce
-    }
-
-    /// Endpoint compatible con la firma de 5 argumentos del TokenMessenger en Testnet
-    pub fn deposit_for_burn_cctp(
-        _env: Env,
-        _amount: i128,
-        _destination_domain: u32,
-        _mint_recipient: BytesN<32>,
-        _burn_token: Address,
-        _from: Address,
-    ) -> u64 {
-        // Devuelve un nonce simulado de CCTP (ej. 1)
-        1
     }
 }
